@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectHub - Advanced Project Management</title>
+    <link rel="stylesheet" href="../src/css/main.css">
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>ProjectHub</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-section="dashboard">
+                        <span class="nav-icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="tasks">
+                        <span class="nav-icon">✅</span>
+                        Tasks
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="projects">
+                        <span class="nav-icon">📁</span>
+                        Projects
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <div class="header">
+                <h1>Project Dashboard</h1>
+                <div class="user-profile">
+                    <div class="avatar">JD</div>
+                    <span>John Doe</span>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalProjects">12</div>
+                    <div class="stat-label">Active Projects</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completedTasks">45</div>
+                    <div class="stat-label">Completed Tasks</div>
+                </div>
+            </div>
+
+            <div class="task-form">
+                <input type="text" class="form-input" id="taskTitle" placeholder="Add a new task...">
+                <button class="btn btn-primary" onclick="addTask()">Add Task</button>
+            </div>
+
+            <div class="task-list" id="taskList">
+                <!-- Tasks will be rendered here -->
+            </div>
+        </main>
+    </div>
+
+    <script src="../src/js/app.js"></script>
+</body>
+</html>
