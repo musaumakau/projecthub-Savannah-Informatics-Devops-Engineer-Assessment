@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: projecthub-db
+    environment:
+      POSTGRES_DB: projecthub
+      POSTGRES_USER: projecthub_user
+      POSTGRES_PASSWORD: projecthub_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U projecthub_user -d projecthub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - projecthub-network
+
+  # Backend API
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: projecthub-backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: projecthub
+      DB_USER: projecthub_user
+      DB_PASSWORD: projecthub_password
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - projecthub-network
+    restart: unless-stopped
+
+  # Frontend (Nginx)
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: projecthub-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - projecthub-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  projecthub-network:
+    driver: bridge
