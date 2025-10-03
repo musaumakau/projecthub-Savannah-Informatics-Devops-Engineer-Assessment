@@ -1,0 +1,269 @@
+---
+- name: Configure Ubuntu EC2 Instance with PostgreSQL and Web Server
+  hosts: all
+  become: yes
+  vars:
+    devops_group: devops
+    devops_user: devops
+    config_file_src: "./config.txt"
+    config_file_dest: "/opt/config.txt"
+    web_server: nginx 
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+    # ========================================
+    # System Updates and Prerequisites
+    # ========================================
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages to latest version
+      apt:
+        upgrade: dist
+        update_cache: yes
+      register: apt_upgrade
+      retries: 3
+      delay: 10
+
+    
+    # User and Group Management
+    - name: Ensure devops group exists
+      group:
+        name: "{{ devops_group }}"
+        state: present
+
+    - name: Ensure devops user exists
+      user:
+        name: "{{ devops_user }}"
+        groups: "{{ devops_group }}"
+        shell: /bin/bash
+        createhome: yes
+        state: present
+
+    - name: Set up SSH key for devops user
+      authorized_key:
+        user: "{{ devops_user }}"
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+      when: lookup('file', '~/.ssh/id_rsa.pub', errors='ignore')
+
+    - name: Configure sudo access for devops user (passwordless)
+      copy:
+        content: "{{ devops_user }} ALL=(ALL) NOPASSWD:ALL\n"
+        dest: "/etc/sudoers.d/{{ devops_user }}"
+        mode: '0440'
+        validate: 'visudo -cf %s'
+
+    
+    # File Transfer with Proper Permissions
+    - name: Ensure /opt directory exists
+      file:
+        path: /opt
+        state: directory
+        mode: '0755'
+
+    - name: Copy config.txt to /opt/ directory
+      copy:
+        src: "{{ config_file_src }}"
+        dest: "{{ config_file_dest }}"
+        owner: root
+        group: "{{ devops_group }}"
+        mode: '0660'  # read/write for owner and group only
+      register: config_copy
+
+    - name: Verify file permissions
+      file:
+        path: "{{ config_file_dest }}"
+        owner: root
+        group: "{{ devops_group }}"
+        mode: '0660'
+        state: file
+
+
+    # System Updates
+    - name: Install required Python packages
+      apt:
+        name:
+          - python3-pip
+          - python3-setuptools
+        state: present
+
+    
+    # PostgreSQL Installation and Configuration
+    - name: Install PostgreSQL and dependencies
+      apt:
+        name:
+          - postgresql
+          - postgresql-contrib
+          - python3-psycopg2
+          - libpq-dev
+        state: latest
+        update_cache: yes
+
+    - name: Ensure PostgreSQL service is enabled and started
+      systemd:
+        name: postgresql
+        enabled: yes
+        state: started
+
+    - name: Check PostgreSQL service status
+      systemd:
+        name: postgresql
+        state: started
+      register: postgres_status
+
+    - name: Display PostgreSQL status
+      debug:
+        msg: "PostgreSQL is {{ postgres_status.status.ActiveState }}"
+
+
+    # Web Server Installation and Configuration
+    - name: Install Nginx (when web_server is nginx)
+      apt:
+        name: nginx
+        state: latest
+        update_cache: yes
+      when: web_server == "nginx"
+
+    - name: Install Apache (when web_server is apache)
+      apt:
+        name: apache2
+        state: latest
+        update_cache: yes
+      when: web_server == "apache"
+
+    - name: Remove default Nginx site configuration
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      when: web_server == "nginx"
+      notify: Restart Nginx
+
+    - name: Create custom Nginx configuration
+      copy:
+        content: |
+          server {
+              listen 80 default_server;
+              listen [::]:80 default_server;
+
+              root /var/www/html;
+              index index.html index.htm;
+
+              server_name _;
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+          }
+        dest: /etc/nginx/sites-available/default
+        mode: '0644'
+      when: web_server == "nginx"
+      notify: Restart Nginx
+
+    - name: Enable Nginx site
+      file:
+        src: /etc/nginx/sites-available/default
+        dest: /etc/nginx/sites-enabled/default
+        state: link
+      when: web_server == "nginx"
+      notify: Restart Nginx
+
+    - name: Create simple index.html for Nginx
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Welcome to Ubuntu EC2</title>
+          </head>
+          <body>
+              <h1>Success! Nginx is configured on Ubuntu EC2</h1>
+              <p>Server configured with Ansible</p>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+        mode: '0644'
+      when: web_server == "nginx"
+
+    - name: Ensure Nginx service is enabled and started
+      systemd:
+        name: nginx
+        enabled: yes
+        state: started
+      when: web_server == "nginx"
+
+    - name: Ensure Apache service is enabled and started
+      systemd:
+        name: apache2
+        enabled: yes
+        state: started
+      when: web_server == "apache"
+
+    # Firewall Configuration for AWS EC2
+    - name: Install UFW
+      apt:
+        name: ufw
+        state: present
+
+    - name: Allow SSH through firewall
+      ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+
+    - name: Allow HTTP through firewall
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Allow HTTPS through firewall
+      ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+
+    - name: Allow PostgreSQL (optional - for remote access)
+      ufw:
+        rule: allow
+        port: '5432'
+        proto: tcp
+      when: allow_postgres_remote | default(false)
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        policy: deny
+
+    
+    # Security Hardening
+    - name: Disable root SSH login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+      notify: Restart SSH
+
+    - name: Disable password authentication (SSH key only)
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+      notify: Restart SSH
+
+
+  # Handlers
+  handlers:
+    - name: Restart Nginx
+      systemd:
+        name: nginx
+        state: restarted
+
+    - name: Restart SSH
+      systemd:
+        name: sshd
+        state: restarted
