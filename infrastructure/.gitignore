@@ -1,0 +1,42 @@
+# --- Terraform ---
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude sensitive variable files
+*.tfvars
+*.tfvars.json
+
+# Ignore plan outputs
+*.tfplan
+plan.out
+
+# Lock files (can be kept if shared intentionally)
+.terraform.lock.hcl
+
+# --- Ansible ---
+# Inventory files that may contain secrets
+inventory.yml
+hosts
+*.retry
+
+# Temporary or generated files
+*.log
+*.tmp
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+.DS_Store
+
+# --- System / Misc ---
+*.bak
+*.zip
+*.tar.gz
