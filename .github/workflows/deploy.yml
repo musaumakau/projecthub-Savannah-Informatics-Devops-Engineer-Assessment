@@ -115,20 +115,20 @@ jobs:
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             
             # Pull latest images
-            docker-compose pull backend frontend
+            docker compose pull backend frontend
             
             # Stop existing containers
-            docker-compose down
+            docker compose down
             
             # Start all services
-            docker-compose up -d
+            docker compose up -d
             
             # Wait for services
             echo "Waiting for services to start..."
             sleep 30
             
             # Show status
-            docker-compose ps
+            docker compose ps
           '
 
       - name: Verify deployment
