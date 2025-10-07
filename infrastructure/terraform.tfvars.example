@@ -22,6 +22,6 @@ ssh_public_key = "<YOUR_PUBLIC_KEY>"
 ssh_allowed_ips = ["<YOUR_IP>/32"]
 
 monitoring_allowed_ips = [
-  "0.0.0.0/0"  # Allow from anywhere - CHANGE THIS IN PRODUCTION!
+  "0.0.0.0/0",  # Allow from anywhere - CHANGE THIS IN PRODUCTION!
   # "YOUR_IP/32",  # Restrict to your IP
 ]
