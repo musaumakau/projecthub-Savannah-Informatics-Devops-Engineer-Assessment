@@ -16,11 +16,10 @@ root_volume_size = 50           # GB - single volume for everything
 
 # SSH Configuration
 # Generate your key: ssh-keygen -t rsa -b 4096 -f ~/.ssh/devops-assessment
-ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDxM922NVSeN54+SL4Aqvi3OF+K8l7pWNxQitSefPgvyfY/szlojIjo0mLdkw0DTbFf1saDRxgoX8FT9GZ57cUKcQLOczE9KjH8yWCKKnlDrrfKI3MEXYJe/n+1DIRFqco+jwhxEV2fbi5bpeG1rh/xeHYw/IUje+A/HWPFWLh1323kaFkHblJ9kvduOJndU8OAoY0dVQI+G062G0zH2gRq9Nib44yozbV/XJgrBYgiqhWyhqeysU/5ODYZt34h7Nxs+3O1gf7ac5J84WkEpdbHVmn88C6gRmldLzsd/ixiS67VIFhCodpYVxXNAZxmj+2Wm5+OkbCjFcjWgx1TwrRPJVKFU709ZT2SS930trbdpVZyEjtNguCC34qOXz1AwR60LxZ4gktwa8TxD4ZQZJ3Hsw5qn4qhzyTdxjHu0JNxZ7ml9jDThVPa6e4P4x4WpIxF1ePCfTWcGOyuezFhYDamYt7awy229qhV+UuWp8p8s9U7NiqUJAAHTxGsVbJdOmCe57iDMhdbEhFU5qzLT0UDLhl6gDlHIUdiF3Why+sSIZzW2/P4gz7SgzQCUMTP030echd4+2a36nM4WKvGXL51Z4bizIfcBsokMEZCbQQE7Uc1A6tp1W9HBELBncMy/Jh9yLfweqigffgm+9ZF3P7QVF7M8xsIi1KhnXiCLPHP7Q== makaujuan@gmail.com"
-
+ssh_public_key = "<YOUR_PUBLIC_KEY>"
 
 # Security - IMPORTANT: Change these to your IP for better security!
-ssh_allowed_ips = ["41.90.208.177/32"]
+ssh_allowed_ips = ["<YOUR_IP>/32"]
 
 monitoring_allowed_ips = [
   "0.0.0.0/0"  # Allow from anywhere - CHANGE THIS IN PRODUCTION!
