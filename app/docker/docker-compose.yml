@@ -20,6 +20,8 @@ services:
       retries: 5
     networks:
       - projecthub-network
+      - monitoring
+    restart: unless-stopped
 
   # Backend API
   backend:
@@ -41,6 +43,7 @@ services:
         condition: service_healthy
     networks:
       - projecthub-network
+      - monitoring
     restart: unless-stopped
 
   # Frontend (Nginx)
@@ -55,11 +58,100 @@ services:
       - backend
     networks:
       - projecthub-network
+      - monitoring
+    restart: unless-stopped
+
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Node Exporter - System Metrics
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    ports:
+      - "9100:9100"
+    volumes:
+      - '/:/host:ro,rslave'
+    networks:
+      - monitoring
+    restart: unless-stopped
+    pid: host
+
+  # cAdvisor - Container Metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitoring
+    restart: unless-stopped
+    privileged: true
+
+  # Postgres Exporter - Database Metrics
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://projecthub_user:projecthub_password@postgres:5432/projecthub?sslmode=disable"
+    ports:
+      - "9187:9187"
+    networks:
+      - projecthub-network
+      - monitoring
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Grafana - Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   projecthub-network:
+    driver: bridge
+  monitoring:
     driver: bridge
