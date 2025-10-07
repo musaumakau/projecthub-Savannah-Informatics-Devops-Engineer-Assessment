@@ -6,15 +6,15 @@ services:
     image: postgres:15-alpine
     container_name: projecthub-db
     environment:
-      POSTGRES_DB: projecthub
-      POSTGRES_USER: projecthub_user
-      POSTGRES_PASSWORD: projecthub_password
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U projecthub_user -d projecthub"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,19 +25,20 @@ services:
 
   # Backend API
   backend:
+    image: ${DOCKERHUB_USERNAME:-local}/projecthub-backend:latest
     build:
       context: ../backend
       dockerfile: Dockerfile
     container_name: projecthub-backend
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: projecthub
-      DB_USER: projecthub_user
-      DB_PASSWORD: projecthub_password
-      PORT: 3000
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      PORT: ${PORT}
     ports:
-      - "3000:3000"
+      - "${PORT}:${PORT}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,6 +49,7 @@ services:
 
   # Frontend (Nginx)
   frontend:
+    image: ${DOCKERHUB_USERNAME:-local}/projecthub-frontend:latest
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -115,7 +117,7 @@ services:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: postgres_exporter
     environment:
-      DATA_SOURCE_NAME: "postgresql://projecthub_user:projecthub_password@postgres:5432/projecthub?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://${DB_USER}:${DB_PASSWORD}@postgres:${DB_PORT}/${DB_NAME}?sslmode=disable"
     ports:
       - "9187:9187"
     networks:
